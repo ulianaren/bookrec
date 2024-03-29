@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js"></script>
+    <link rel="stylesheet" href="{{url_for('static', filename='main.css')}}">
+</head>
+<body>
+    <script type="text/javascript">
+        $(document).ready(function () { // Wait for document to load completely
+            var socket = io.connect("http://localhost:5000"); // Create a WebSocket connection to the Flask server
+            var loadingElement = $("#loading"); // Select an HTML element with the ID "loading" and assign to variable to manipulate in JavaScript
+    
+            // Triggered when the connection is successfully established between the client and the server
+            socket.on("connect", function () { 
+                socket.send("User connected!"); // Sends the massage to the server if the connection is successful
+            });
+
+            // Receive message from handle_message function in py file, append it to the right section
+            socket.on('message', function (data) { 
+                if (data.startsWith("Bot:")) { // Check if the message is from the bot
+                    loadingElement.hide(); // Hide loading animation
+                    $("#messages").append($('<div class="bot-message">').html(data.replace(/\n/g, '<br>').substring(4))); // Append to created div with breaks/removed "Bot: " before
+                } 
+                
+                else {
+                    $("#messages").append($('<p class="user-message">').text("User: " + data)); // Assume any other message is from the user
+                }
+            });
+    
+            $("#sendBtn").on("click", sendMessage); // Send the message if button is clicked
+    
+            $("#message").on("keypress", function (event) {
+                if (event.which === 13) { // Check if the pressed key is Enter
+                    sendMessage(); // If yes, send the message to the server
+                }
+            });
+
+            // Sending user messages to the server
+            function sendMessage() {
+                var userMessage = $("#message").val();
+                socket.send(userMessage); // Sends user input to the server, to python handle_message function
+    
+                // Show loading animation when sending a message
+                loadingElement.html('<img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExczAzYnFoZW4yeHUxbndiOHltOHQ0YjI0anQ0cnFyNjluYTE1ZTVsbCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/MJ2C7S7CXf2Qr17Zf9/giphy.gif" alt="Loading...">');
+                loadingElement.show();
+    
+                $("#messages").append($('<p class="user-message">').text(userMessage)); // append user's input to needed section
+                $("#message").val(""); //empty the field for inputting text
+            }
+        });
+    </script>
+    
+<div id="chat-container">
+    <div id="messages"></div>
+    <input type="text" id="message" placeholder="Type your message...">
+    <button id="sendBtn">Send</button>
+    <div id="loading"></div>
+</div>
+
+</body>
+</html>
